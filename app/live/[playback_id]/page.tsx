@@ -43,6 +43,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { FaEthereum } from "react-icons/fa";
 
 // Convert timestamp to relative time format
 const getRelativeTimeFormat = (timestamp: string) => {
@@ -419,6 +420,36 @@ export default function LiveStream() {
         return;
       }
 
+      // Check if message contains a mention of ly bot
+      if (newMessage.includes("@ly bot")) {
+        try {
+          // Send request to partition chat bot donation endpoint
+          const response = await fetch("/api/partitionChatBotDonation", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              chatMessage: newMessage.trim(),
+              walletAddress: address,
+              playback_id: params.playback_id,
+              timestamp: new Date().toISOString(),
+            }),
+          });
+
+          const { result, status } = await response.json();
+
+          if (!response.ok) {
+            console.error(
+              "Failed to process bot request:",
+              await response.text()
+            );
+          }
+        } catch (botError) {
+          console.error("Error sending request to bot API:", botError);
+        }
+      }
+
       // Clear input after sending
       setNewMessage("");
       setReplyingTo(null);
@@ -547,12 +578,15 @@ export default function LiveStream() {
         return (
           <span
             key={index}
-            className={`px-1 rounded ${
+            className={`px-1 rounded flex items-center gap-1 ${
               part === "@ly bot"
                 ? "bg-indigo-500/20 text-indigo-600 dark:text-indigo-400"
                 : "bg-secondary/30 text-primary-foreground"
             }`}
           >
+            {part === "@ly bot" && (
+              <FaEthereum className="text-indigo-500" size={12} />
+            )}
             {part}
           </span>
         );
@@ -1042,6 +1076,8 @@ export default function LiveStream() {
                                 className={`px-4 py-3 rounded-lg shadow-sm ${
                                   isCurrentUser
                                     ? "bg-primary text-primary-foreground rounded-tr-none"
+                                    : msg.message.includes("@ly bot")
+                                    ? "bg-indigo-600/90 text-white rounded-tl-none"
                                     : "bg-card rounded-tl-none"
                                 }`}
                               >
@@ -1061,7 +1097,13 @@ export default function LiveStream() {
                                 )}
 
                                 {/* Message content with tag highlighting */}
-                                <p className="text-sm break-words leading-relaxed">
+                                <p
+                                  className={`text-sm break-words leading-relaxed ${
+                                    msg.message.includes("@ly bot")
+                                      ? "text-indigo-100"
+                                      : ""
+                                  }`}
+                                >
                                   {renderMessageWithTags(msg.message)}
                                 </p>
 
