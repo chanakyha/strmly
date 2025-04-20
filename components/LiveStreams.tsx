@@ -9,8 +9,11 @@ const streams = [
   
   export default function LiveStreams() {
     return (
-      <div className="px-4 py-6">
-        <h2 className="text-lg font-medium mb-3">Live Streams</h2>
+      <div className="px-4 mx-4 rounded-lg py-6 bg-[#C4E4FF14]">
+        <div className="flex w-full gap-1.5">
+        <h1 className="text-lg font-medium text-red-600 font-mono mb-3">Live</h1>
+        <h1 className="text-lg font-medium mb-3">Streams</h1>
+        </div>
         <div className="flex gap-4 overflow-x-auto">
           {streams.map((s, idx) => (
             <div key={idx} className="min-w-[200px] bg-zinc-800 rounded-md p-2">

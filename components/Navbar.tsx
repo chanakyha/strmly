@@ -6,6 +6,7 @@ import { useAccount } from "wagmi";
 import { UploadCloud, Search } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 const Navbar = () => {
   const { isConnected, address } = useAccount();
@@ -41,13 +42,19 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 backdrop-blur-md border-b border-neutral-800 bg-black/85 py-3 shadow-lg">
-      <div className="container mx-auto flex items-center justify-between px-4">
+    <nav className="sticky top-0 z-50 backdrop-blur-md border-b border-neutral-800 bg-black/55 py-3 shadow-lg">
+      <div className="container mx-auto flex items-center justify-between px-8">
         {/* Project Title */}
         <Link href="/" className="group relative mr-4 flex-shrink-0">
-          <span className="text-2xl font-bold bg-gradient-to-r from-purple-500 via-blue-500 to-teal-500 bg-clip-text text-transparent transition-all duration-300">
+          {/* <span className="text-2xl font-bold bg-gradient-to-r from-purple-500 via-blue-500 to-teal-500 bg-clip-text text-transparent transition-all duration-300">
             strmly
-          </span>
+          </span> */}
+          <Image
+          src={'/logo.png'}
+          alt='logo'
+          width={80}
+          height={80}
+          />
           <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-500 via-blue-500 to-teal-500 transition-all duration-300 group-hover:w-full"></span>
         </Link>
 

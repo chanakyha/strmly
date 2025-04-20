@@ -1048,6 +1048,10 @@ export default function ProfilePage({
               </p>
             </CardContent>
           </Card>
+          <div className="p-4">
+        <h1 className="text-5xl text-white py-2">{payoutBalance}</h1>
+        <button className="text-white bg-pink-500 rounded-lg p-4 ">Claim Balance</button>
+      </div>
         </div>
       </div>
 
