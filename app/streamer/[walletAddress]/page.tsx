@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import ProfilePage from "./ProfilePage";
 
+
 interface User {
   walletAddress: string;
   name: string;

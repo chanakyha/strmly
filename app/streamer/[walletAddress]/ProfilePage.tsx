@@ -1,7 +1,7 @@
 "use client";
 
 import { useAccount } from "wagmi";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, use } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,8 @@ import { emojiAvatarForAddress } from "@/lib/emojiAvatarForAddress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { readContract } from "@wagmi/core";
+import { ABI } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +28,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { contractAddress } from "@/lib/utils";
+import { config } from "@/lib/config";
 
 // Define User interface to avoid type errors
 interface User {
@@ -73,6 +77,7 @@ export default function ProfilePage({
   const { address } = useAccount();
   const [userData, setUserData] = useState<User | null>(profileData.userData);
   const [isEditing, setIsEditing] = useState(false);
+  const [payoutBalance, setPayoutBalance] = useState(0);
   const [editForm, setEditForm] = useState<{
     name: string;
     bio: string;
@@ -225,6 +230,31 @@ export default function ProfilePage({
 
     checkSubscriptionStatus();
   }, [address, profileData.userData.walletAddress]);
+
+  useEffect(() => {
+    if (!address) return;
+
+    const fetchPayoutBalance = async () => {
+      try {
+        const result = await readContract(config,{
+          abi: ABI,
+          address: contractAddress,
+          functionName: "checkBalance",
+        });
+        console.log("Payout balance:", result);
+        //covert bigint to number
+        const balance = Number(result) / 1e18; // Convert from wei to ether
+        setPayoutBalance(balance);
+        
+
+      } catch (err) {
+        console.error("Error fetching payout balance:", err);
+      }
+    };
+
+    fetchPayoutBalance();
+  },[]);
+  
 
   // Setup real-time subscription for the profile data
   useEffect(() => {
