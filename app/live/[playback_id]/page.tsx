@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { writeContract } from '@wagmi/core'
 import { useParams, useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { TagInput } from "@/components/ui/tag-input";
 import { createClient } from "@/lib/supabase/client";
 import { emojiAvatarForAddress } from "@/lib/emojiAvatarForAddress";
-import { getPlaybackSource, deleteStream } from "@/lib/utils";
+import { getPlaybackSource, deleteStream, contractAddress, ABI } from "@/lib/utils";
 import { PlayerWithControls } from "@/components/LivePlayer";
 import {
   MessageCircle,
@@ -44,6 +45,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { FaEthereum } from "react-icons/fa";
+import { config } from "@/lib/config";
+import { parseEther } from "viem";
 
 // Convert timestamp to relative time format
 const getRelativeTimeFormat = (timestamp: string) => {
@@ -437,14 +440,38 @@ export default function LiveStream() {
             }),
           });
 
-          const { result, status } = await response.json();
-
           if (!response.ok) {
+            alert("Failed to process bot request");
             console.error(
               "Failed to process bot request:",
               await response.text()
             );
           }
+          
+            
+            const { result, status } = await response.json();
+            const { data:streamerID , error } = await supabase.from("lives").select("walletAddress").eq("playback_id", params.playback_id).single();
+            console.log("Streamer ID:", streamerID);
+            console.log("ParseEther:", parseEther(result.amount));
+            // writeContract(config, {
+            //   address: contractAddress,
+            //   abi: ABI,
+            //   functionName: "donateToStreamer",
+            //   args: [streamerID,result.message],
+            //   value: parseEther(result.amount),
+      
+            // })
+              // .then(result => {
+              //   alert("Donation sent successfully");
+              //   //setAiResponse(${data.amount} ETH is sent to the streamer);
+              //   console.log("Donation sent successfully");
+              //   toast.success("Donation sent successfully");
+              // })
+              // .catch(e => {
+              //   console.error("Error sending donation:", e);
+              // });
+            
+          
         } catch (botError) {
           console.error("Error sending request to bot API:", botError);
         }

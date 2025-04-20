@@ -36,7 +36,7 @@ interface User {
 }
 
 const LiveStreamPage = () => {
-  const { address } = useAccount();
+  const { address } = useAccount(); 
   const [streamTitle, setStreamTitle] = useState("");
   const [streamDescription, setStreamDescription] = useState("");
   const [streamTags, setStreamTags] = useState<string[]>([]);
@@ -133,7 +133,9 @@ const LiveStreamPage = () => {
         const { data, error } = await supabase
           .from("lives")
           .select("*")
+          //.eq("walletAddress", address)
           .order("created_at", { ascending: false });
+          
 
         if (error) {
           console.error("Error fetching live streams:", error);
@@ -369,8 +371,9 @@ const LiveStreamPage = () => {
               <Button onClick={scrollToCreateSection}>Create Stream</Button>
             </div>
           ) : (
-            allLiveStreams.map((stream) => (
+            allLiveStreams.filter(stream=>stream.walletAddress==address).map((stream) => (
               <Card
+                //hidden={!address && stream.walletAddress != address}
                 key={stream.playback_id}
                 className="overflow-hidden hover:shadow-md transition-shadow"
               >
