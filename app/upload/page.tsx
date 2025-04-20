@@ -20,7 +20,7 @@ const UploadPage = () => {
       method: 'POST',
       body: formData,
       headers: {
-        'Authorization': `Bearer YOUR_LIVEPEER_API_KEY`,  // Replace with your actual API Key
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_LIVEPEER_API_KEY}` // Replace with your actual API Key
       },
     });
 
@@ -60,31 +60,44 @@ const UploadPage = () => {
   };
 
   return (
-    <div>
-      <h1>Upload Video</h1>
-      <input
-        type="text"
-        placeholder="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <input
-        type="text"
-        placeholder="Tags"
-        value={tags}
-        onChange={(e) => setTags(e.target.value)}
-      />
-      <input
-        type="file"
-        accept="video/*"
-        onChange={(e) => setFile(e.target.files?.[0] || null)}
-      />
-      <button onClick={handleUpload} disabled={isLoading}>
-        {isLoading ? 'Uploading...' : 'Upload'}
-      </button>
-      {data && <p>Success! Video URL: https://lvpr.tv/?v={data.playbackId}</p>}
-      {error && <p>Error: {error.message}</p>}
-    </div>
+    <div className="max-w-xl mx-auto mt-10 space-y-4 text-white">
+  <h1 className="text-2xl font-bold">Upload Video</h1>
+
+  <input
+    className="w-full p-2 rounded bg-gray-800 border border-gray-700"
+    type="text"
+    placeholder="Title"
+    value={title}
+    onChange={(e) => setTitle(e.target.value)}
+  />
+
+  <input
+    className="w-full p-2 rounded bg-gray-800 border border-gray-700"
+    type="text"
+    placeholder="Tags"
+    value={tags}
+    onChange={(e) => setTags(e.target.value)}
+  />
+
+  <input
+    className="w-full p-2 rounded bg-gray-800 border border-gray-700"
+    type="file"
+    accept="video/*"
+    onChange={(e) => setFile(e.target.files?.[0] || null)}
+  />
+
+  <button
+    className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700"
+    onClick={handleUpload}
+    disabled={isLoading}
+  >
+    {isLoading ? 'Uploading...' : 'Upload'}
+  </button>
+
+  {data && <p className="text-green-500">✅ Video URL: https://lvpr.tv/?v={data.playbackId}</p>}
+  {error && <p className="text-red-500">❌ Error: {error.message}</p>}
+</div>
+
   );
 };
 
