@@ -448,30 +448,57 @@ export default function LiveStream() {
             );
           }
           
-            
-            const { result, status } = await response.json();
-            const { data:streamerID , error } = await supabase.from("lives").select("walletAddress").eq("playback_id", params.playback_id).single();
-            console.log("Streamer ID:", streamerID);
-            console.log("ParseEther:", parseEther(result.amount));
-            // writeContract(config, {
-            //   address: contractAddress,
-            //   abi: ABI,
-            //   functionName: "donateToStreamer",
-            //   args: [streamerID,result.message],
-            //   value: parseEther(result.amount),
-      
-            // })
-              // .then(result => {
-              //   alert("Donation sent successfully");
-              //   //setAiResponse(${data.amount} ETH is sent to the streamer);
-              //   console.log("Donation sent successfully");
-              //   toast.success("Donation sent successfully");
-              // })
-              // .catch(e => {
-              //   console.error("Error sending donation:", e);
-              // });
-            
+          const { result, status } = await response.json();
+          const { data: streamerID, error } = await supabase
+            .from("lives")
+            .select("walletAddress")
+            .eq("playback_id", params.playback_id)
+            .single();
           
+          console.log("Streamer ID:", streamerID);
+          
+          // Check if streamerID is not null before accessing walletAddress
+          if (!streamerID) {
+            console.error("Streamer ID is null");
+            toast.error("Streamer not found");
+            return; // Early return if streamerID is null
+          }
+          
+          // FIX: Check if result.amount is a valid string and convert it to string if it's not
+          if (result && result.amount) {
+            const amountString = typeof result.amount === 'string' 
+              ? result.amount 
+              : result.amount.toString();
+            
+            console.log("Amount to send:", amountString);
+            
+            try {
+              const parsedAmount = parseEther(amountString);
+              console.log("ParseEther result:", parsedAmount);
+              
+              // Uncomment this code when ready to implement the actual donation
+              writeContract(config, {
+                address: contractAddress,
+                abi: ABI,
+                functionName: "donateToStreamer",
+                args: [streamerID.walletAddress, result.message], // fix to access the walletAddress property
+                value: parsedAmount,
+              })
+                .then(result => {
+                  toast.success("Donation sent successfully");
+                  console.log("Donation sent successfully");
+                })
+                .catch(e => {
+                  console.error("Error sending donation:", e);
+                  toast.error("Failed to send donation");
+                });
+            } catch (parseError) {
+              console.error("Error parsing ETH amount:", parseError);
+              toast.error("Invalid donation amount");
+            }
+          } else {
+            console.error("Missing or invalid amount in bot response");
+          }
         } catch (botError) {
           console.error("Error sending request to bot API:", botError);
         }
