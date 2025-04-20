@@ -20,3 +20,13 @@ interface LiveData {
   thumbnail_url: string;
   description: string;
 }
+
+interface LiveChatMessage {
+  id: number;
+  created_at: string;
+  message: string;
+  walletAddress: string;
+  playback_id: string;
+  reply_to: number | null;
+  message_id: number;
+}
