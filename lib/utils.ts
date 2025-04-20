@@ -31,7 +31,7 @@ export const deleteStream = async (playbackId: string) => {
   await livepeer.stream.delete(playbackId);
 };
 
-export const contractAddress = "0xe013cd6e89bbfa77464b873e8f80a67d8e6c4cb323f1186f0795901aa4d60c57";
+export const contractAddress = "0x00374b6ae6703703bbb0cb404d2d06f0dfe7d618";
 export const ABI = [
 	{
 		"anonymous": false,

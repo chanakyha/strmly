@@ -453,23 +453,23 @@ export default function LiveStream() {
             const { data:streamerID , error } = await supabase.from("lives").select("walletAddress").eq("playback_id", params.playback_id).single();
             console.log("Streamer ID:", streamerID);
             console.log("ParseEther:", parseEther(result.amount));
-            // writeContract(config, {
-            //   address: contractAddress,
-            //   abi: ABI,
-            //   functionName: "donateToStreamer",
-            //   args: [streamerID,result.message],
-            //   value: parseEther(result.amount),
+            writeContract(config, {
+              address: contractAddress,
+              abi: ABI,
+              functionName: "donateToStreamer",
+              args: [streamerID,result.message],
+              value: parseEther(result.amount),
       
-            // })
-              // .then(result => {
-              //   alert("Donation sent successfully");
-              //   //setAiResponse(${data.amount} ETH is sent to the streamer);
-              //   console.log("Donation sent successfully");
-              //   toast.success("Donation sent successfully");
-              // })
-              // .catch(e => {
-              //   console.error("Error sending donation:", e);
-              // });
+            })
+              .then(result => {
+                alert("Donation sent successfully");
+                //setAiResponse(${data.amount} ETH is sent to the streamer);
+                console.log("Donation sent successfully");
+                toast.success("Donation sent successfully");
+              })
+              .catch(e => {
+                console.error("Error sending donation:", e);
+              });
             
           
         } catch (botError) {
