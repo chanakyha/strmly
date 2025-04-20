@@ -1,31 +1,46 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+interface Cookie {
+  name: string;
+  value: string;
+  options: {
+    path?: string;
+    expires?: Date;
+    domain?: string;
+    secure?: boolean;
+    httpOnly?: boolean;
+  };
+}
+
 export async function createClient() {
   const cookieStore = await cookies();
 
-  // Create a server's supabase client with newly configured cookie,
-  // which could be used to maintain user's session
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
+  try {
+    // Create a server's Supabase client with newly configured cookie,
+    // which could be used to maintain the user's session
+    return createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet: Cookie[]) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              try {
+                cookieStore.set(name, value, options);
+              } catch (err) {
+                console.error(`Error setting cookie ${name}:`, err);
+              }
+            });
+          },
         },
-        setAll(cookiesToSet: any) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }: any) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
-        },
-      },
-    }
-  );
+      }
+    );
+  } catch (err) {
+    console.error("Error creating Supabase client:", err);
+    throw new Error("Failed to create Supabase client");
+  }
 }
