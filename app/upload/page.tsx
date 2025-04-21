@@ -241,27 +241,6 @@ const VideoUploader = () => {
       <h2 className="text-2xl font-bold mb-6">Upload Video</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="md:col-span-1">
-          <Card className="p-6">
-            <div className="flex flex-col items-center">
-              <div
-                className="w-24 h-24 rounded-full flex items-center justify-center text-4xl mb-4"
-                style={{ backgroundColor: avatar.color }}
-              >
-                {avatar.emoji}
-              </div>
-              <h3 className="text-xl font-bold">
-                {userData?.name || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Not Connected")}
-              </h3>
-              {!address && (
-                <p className="text-center mt-4 text-sm text-muted-foreground">
-                  Please connect your wallet to upload videos
-                </p>
-              )}
-            </div>
-          </Card>
-        </div>
-
         <div className="md:col-span-2">
           <Card className="p-6">
             {error && (
@@ -349,6 +328,7 @@ const VideoUploader = () => {
                 <Button 
                   variant="outline" 
                   onClick={checkNsfwContent}
+                  className='text-[#3DA0C1] border-[#3DA0C1] border-2'
                   disabled={uploading || nsfwChecked}
                 >
                   Check NSFW
@@ -371,6 +351,27 @@ const VideoUploader = () => {
                     ></div>
                   </div>
                 </div>
+              )}
+            </div>
+          </Card>
+        </div>
+
+        <div className="md:col-span-1">
+          <Card className="p-6">
+            <div className="flex flex-col items-center">
+              <div
+                className="w-24 h-24 rounded-full flex items-center justify-center text-4xl mb-4"
+                style={{ backgroundColor: avatar.color }}
+              >
+                {avatar.emoji}
+              </div>
+              <h3 className="text-xl font-bold">
+                {userData?.name || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Not Connected")}
+              </h3>
+              {!address && (
+                <p className="text-center mt-4 text-sm text-muted-foreground">
+                  Please connect your wallet to upload videos
+                </p>
               )}
             </div>
           </Card>

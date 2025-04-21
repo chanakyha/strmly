@@ -689,7 +689,7 @@ export default function LiveStream() {
 
   return (
     <>
-      <div className="container mx-auto py-6">
+      <div className="container mx-auto py-6 px-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             {/* Video Player */}

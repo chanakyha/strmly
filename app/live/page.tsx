@@ -342,7 +342,7 @@ const LiveStreamPage = () => {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-12">
+    <div className="container mx-auto py-6 px-8 space-y-12">
       {/* Browse Streams Section */}
       <section>
         <h2 className="text-2xl font-bold mb-6">Browse Streams</h2>
@@ -690,7 +690,7 @@ const LiveStreamPage = () => {
 
                   <Button
                     onClick={handleCreateStream}
-                    className="w-full"
+                    className="w-full bg-red-500 text-white"
                     disabled={!streamTitle || !address}
                   >
                     {!address
