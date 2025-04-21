@@ -88,13 +88,13 @@ export default function VideoSection({ title }: { title: string }) {
            <div className="bg-zinc-800 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer">
              <div className="relative pb-[56.25%]">
                <img
-                 src={video.url}
+                 src={'/videothumbnail.png'}
                  alt={video.title}
                  className="absolute inset-0 w-full h-full object-cover"
                />
                <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 px-2 py-1 text-xs rounded">
                  {video.nsfw && <span className="text-red-500 mr-2">NSFW</span>}
-                 {!video.approved && <span className="text-yellow-500">Pending</span>}
+                 {/* {!video.approved && <span className="text-yellow-500">Pending</span>} */}
                </div>
              </div>
              <div className="p-3">
