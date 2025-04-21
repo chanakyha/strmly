@@ -225,7 +225,7 @@ export default function ProfilePage({
     };
 
     fetchPayoutBalance();
-  }, []);
+  }, [address]);
 
   // Setup real-time subscription for the profile data
   useEffect(() => {

@@ -39,7 +39,11 @@ export default function VideoSection({ title }: { title: string }) {
           setVideos(data || []);
         }
       } catch (err) {
-        setError(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
+        setError(
+          `Unexpected error: ${
+            err instanceof Error ? err.message : String(err)
+          }`
+        );
       } finally {
         setLoading(false);
       }
@@ -75,7 +79,9 @@ export default function VideoSection({ title }: { title: string }) {
         <div className="text-center py-8">
           No videos found.
           <button
-            onClick={() => console.log("Current state:", { videos, loading, error })}
+            onClick={() =>
+              console.log("Current state:", { videos, loading, error })
+            }
             className="ml-2 text-blue-500 underline"
           >
             Debug
@@ -84,26 +90,28 @@ export default function VideoSection({ title }: { title: string }) {
       ) : (
         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {videos.map((video) => (
-           <Link href={`/watch/${video.id}`} key={video.id}>
-           <div className="bg-zinc-800 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer">
-             <div className="relative pb-[56.25%]">
-               <img
-                 src={'/videothumbnail.png'}
-                 alt={video.title}
-                 className="absolute inset-0 w-full h-full object-cover"
-               />
-               <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 px-2 py-1 text-xs rounded">
-                 {video.nsfw && <span className="text-red-500 mr-2">NSFW</span>}
-                 {/* {!video.approved && <span className="text-yellow-500">Pending</span>} */}
-               </div>
-             </div>
-             <div className="p-3">
-               <h3 className="font-medium text-base line-clamp-2 mb-1">
-                 {video.title || "Untitled"}
-               </h3>
-             </div>
-           </div>
-         </Link>
+            <Link href={`/watch/${video.id}`} key={video.id}>
+              <div className="bg-zinc-800 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer">
+                <div className="relative pb-[56.25%]">
+                  <img
+                    src={"/thumb2.png"}
+                    alt={video.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 px-2 py-1 text-xs rounded">
+                    {video.nsfw && (
+                      <span className="text-red-500 mr-2">NSFW</span>
+                    )}
+                    {/* {!video.approved && <span className="text-yellow-500">Pending</span>} */}
+                  </div>
+                </div>
+                <div className="p-3">
+                  <h3 className="font-medium text-base line-clamp-2 mb-1">
+                    {video.title || "Untitled"}
+                  </h3>
+                </div>
+              </div>
+            </Link>
           ))}
         </div>
       )}
