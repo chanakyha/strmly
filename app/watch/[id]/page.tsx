@@ -1,9 +1,7 @@
 // app/watch/[id]/page.tsx
-"use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server";
+import VideoClient from "./VideoClient";
 
 type Video = {
   id: string;
@@ -12,54 +10,59 @@ type Video = {
   url: string;
   created_at: string;
   tags: string[];
+  wallet_address: string;
+  views?: number;
+  channel?: {
+    name: string;
+    avatar_url: string;
+    subscribers?: number;
+  };
 };
 
-export default function WatchPage() {
-  const { id } = useParams();
-  const [video, setVideo] = useState<Video | null>(null);
-  const [error, setError] = useState<string | null>(null);
+export default async function WatchPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const { id } = params;
 
-  useEffect(() => {
-    const fetchVideo = async () => {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("videos")
-        .select("*")
-        .eq("id", id)
-        .single();
+  // Create a server-side Supabase client
+  const supabase = await createClient();
 
-      if (error) {
-        setError("Video not found");
-      } else {
-        setVideo(data);
-      }
-    };
+  // Fetch video data
+  const { data, error } = await supabase
+    .from("videos")
+    .select("*")
+    .eq("id", id)
+    .single();
 
-    if (id) fetchVideo();
-  }, [id]);
+  if (error) {
+    return <div className="text-red-500 p-6 text-center">Video not found</div>;
+  }
 
-  if (error) return <div className="text-red-500 p-6 text-center">{error}</div>;
-  if (!video) return <div className="text-center p-6">Loading...</div>;
+  // Fetch related videos
+  const { data: relatedData } = await supabase
+    .from("videos")
+    .select("*")
+    .neq("id", id)
+    .limit(8);
+
+  // Add mock data for channel info
+  const videoWithChannel = {
+    ...data,
+    views: Math.floor(Math.random() * 100000),
+    channel: {
+      name: "Stream.ly User",
+      avatar_url: `https://api.dicebear.com/7.x/shapes/svg?seed=${data.id}`,
+      subscribers: Math.floor(Math.random() * 10000),
+    },
+  };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
-      <div className="relative pb-[56.25%] mb-2">
-        <video
-          src={video.url}
-          controls
-          autoPlay
-          className="absolute inset-0 w-full h-full rounded-lg shadow-lg border-white/20 border-2"
-        />
-      </div>
-      <h1 className="text-2xl font-bold mb-2">{video.title}</h1>
-      <p className="text-gray-300 mb-4">{video.description}</p>
-      <div className="flex gap-2 flex-wrap text-sm text-gray-400">
-        {/* {video.tags?.map((tag, i) => (
-          <span key={i} className="bg-zinc-700 px-2 py-1 rounded">
-            #{tag}
-          </span>
-        ))} */}
-      </div>
-    </div>
+    <VideoClient
+      video={videoWithChannel}
+      relatedVideos={relatedData || []}
+      videoId={id}
+    />
   );
 }

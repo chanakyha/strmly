@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { writeContract } from '@wagmi/core'
+import { writeContract } from "@wagmi/core";
 import { useParams, useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { TagInput } from "@/components/ui/tag-input";
 import { createClient } from "@/lib/supabase/client";
 import { emojiAvatarForAddress } from "@/lib/emojiAvatarForAddress";
-import { getPlaybackSource, deleteStream, contractAddress, ABI } from "@/lib/utils";
+import {
+  getPlaybackSource,
+  deleteStream,
+  contractAddress,
+  ABI,
+} from "@/lib/utils";
 import { PlayerWithControls } from "@/components/LivePlayer";
 import {
   MessageCircle,
@@ -410,19 +415,6 @@ export default function LiveStream() {
       setSendingMessage(true);
       const supabase = createClient();
 
-      const { error } = await supabase.from("live-chats").insert({
-        message: newMessage.trim(),
-        walletAddress: address,
-        playback_id: params.playback_id,
-        reply_to: replyingTo ? replyingTo.id : null,
-      });
-
-      if (error) {
-        console.error("Error sending message:", error);
-        toast.error("Failed to send message");
-        return;
-      }
-
       // Check if message contains a mention of ly bot
       if (newMessage.includes("@ly bot")) {
         try {
@@ -447,35 +439,36 @@ export default function LiveStream() {
               await response.text()
             );
           }
-          
-          const { result, status } = await response.json();
-          const { data: streamerID, error } = await supabase
+
+          const { result } = await response.json();
+          const { data: streamerID } = await supabase
             .from("lives")
             .select("walletAddress")
             .eq("playback_id", params.playback_id)
             .single();
-          
+
           console.log("Streamer ID:", streamerID);
-          
+
           // Check if streamerID is not null before accessing walletAddress
           if (!streamerID) {
             console.error("Streamer ID is null");
             toast.error("Streamer not found");
             return; // Early return if streamerID is null
           }
-          
+
           // FIX: Check if result.amount is a valid string and convert it to string if it's not
           if (result && result.amount) {
-            const amountString = typeof result.amount === 'string' 
-              ? result.amount 
-              : result.amount.toString();
-            
+            const amountString =
+              typeof result.amount === "string"
+                ? result.amount
+                : result.amount.toString();
+
             console.log("Amount to send:", amountString);
-            
+
             try {
               const parsedAmount = parseEther(amountString);
               console.log("ParseEther result:", parsedAmount);
-              
+
               // Uncomment this code when ready to implement the actual donation
               writeContract(config, {
                 address: contractAddress,
@@ -484,11 +477,23 @@ export default function LiveStream() {
                 args: [streamerID.walletAddress, result.message], // fix to access the walletAddress property
                 value: parsedAmount,
               })
-                .then(result => {
+                .then(async () => {
                   toast.success("Donation sent successfully");
                   console.log("Donation sent successfully");
+                  const { error } = await supabase.from("live-chats").insert({
+                    message: newMessage.trim(),
+                    walletAddress: address,
+                    playback_id: params.playback_id,
+                    reply_to: replyingTo ? replyingTo.id : null,
+                  });
+
+                  if (error) {
+                    console.error("Error sending message:", error);
+                    toast.error("Failed to send message");
+                    return;
+                  }
                 })
-                .catch(e => {
+                .catch((e) => {
                   console.error("Error sending donation:", e);
                   toast.error("Failed to send donation");
                 });
@@ -501,6 +506,19 @@ export default function LiveStream() {
           }
         } catch (botError) {
           console.error("Error sending request to bot API:", botError);
+        }
+      } else {
+        const { error } = await supabase.from("live-chats").insert({
+          message: newMessage.trim(),
+          walletAddress: address,
+          playback_id: params.playback_id,
+          reply_to: replyingTo ? replyingTo.id : null,
+        });
+
+        if (error) {
+          console.error("Error sending message:", error);
+          toast.error("Failed to send message");
+          return;
         }
       }
 
@@ -1186,7 +1204,7 @@ export default function LiveStream() {
                               <div className="ml-2 mt-1">
                                 <div
                                   className="w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 shadow-sm border border-border/40"
-                                  style={{ backgroundColor: msgAvatar.color }}
+                                  // style={{ backgroundColor: msgAvatar.color }}
                                 >
                                   {msgAvatar.emoji}
                                 </div>

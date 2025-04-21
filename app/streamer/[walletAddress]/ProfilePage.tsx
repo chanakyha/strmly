@@ -58,6 +58,8 @@ interface Content {
   views: number;
   timestamp: string;
   isLive: boolean;
+  walletAddress?: string;
+  playback_id?: string;
 }
 
 // Sample NFT data interface
@@ -93,6 +95,9 @@ export default function ProfilePage({
   const [subscribeLoading, setSubscribeLoading] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const [content, setContent] = useState<Content[]>([]);
+  const [claimLoading, setClaimLoading] = useState(false);
+  const [contentLoading, setContentLoading] = useState(true);
 
   // State for subscribed profiles - initialized with server data
   const [subscribedProfiles, setSubscribedProfiles] = useState(
@@ -104,37 +109,6 @@ export default function ProfilePage({
   const subscribersCount = userData?.subscribers?.length || 0;
 
   // Mock data for videos and streams - would be replaced with actual API calls
-  const content: Content[] = [
-    {
-      id: "1",
-      title: "Exploring the Latest Blockchain Trends",
-      thumbnail:
-        "https://images.unsplash.com/photo-1639322537228-f710d846310a?q=80&w=1632&auto=format&fit=crop",
-      views: 1240,
-      timestamp: "2023-10-15T14:30:00Z",
-      isLive: false,
-    },
-    {
-      id: "2",
-      title: "Live Coding Session: Building a Dapp",
-      thumbnail:
-        "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=1470&auto=format&fit=crop",
-      views: 856,
-      timestamp: "2023-11-02T10:00:00Z",
-      isLive: true,
-    },
-    {
-      id: "3",
-      title: "NFT Creation Workshop",
-      thumbnail:
-        "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1374&auto=format&fit=crop",
-      views: 2560,
-      timestamp: "2023-10-28T15:45:00Z",
-      isLive: false,
-    },
-  ];
-
-  // Mock data for NFTs
   const nfts: NFT[] = [
     {
       id: "nft1",
@@ -236,7 +210,7 @@ export default function ProfilePage({
 
     const fetchPayoutBalance = async () => {
       try {
-        const result = await readContract(config,{
+        const result = await readContract(config, {
           abi: ABI,
           address: contractAddress,
           functionName: "checkBalance",
@@ -245,16 +219,13 @@ export default function ProfilePage({
         //covert bigint to number
         const balance = Number(result) / 1e18; // Convert from wei to ether
         setPayoutBalance(balance);
-        
-
       } catch (err) {
         console.error("Error fetching payout balance:", err);
       }
     };
 
     fetchPayoutBalance();
-  },[]);
-  
+  }, []);
 
   // Setup real-time subscription for the profile data
   useEffect(() => {
@@ -594,6 +565,214 @@ export default function ProfilePage({
         />
       );
     });
+  };
+
+  // Function to generate custom thumbnail for content without thumbnails
+  const generateCustomThumbnail = (
+    title: string,
+    walletAddress: string,
+    isLive: boolean
+  ) => {
+    // Generate a deterministic color based on wallet address
+    const hash = walletAddress.split("").reduce((acc, char) => {
+      return char.charCodeAt(0) + ((acc << 5) - acc);
+    }, 0);
+
+    const h = Math.abs(hash) % 360;
+    const s = 70 + (Math.abs(hash) % 20); // Between 70-90%
+    const l = 45 + (Math.abs(hash) % 10); // Between 45-55%
+
+    const backgroundColorLive = isLive
+      ? `hsl(348, 85%, 55%)`
+      : `hsl(${h}, ${s}%, ${l}%)`;
+
+    // Create a data URL for the SVG thumbnail
+    return `data:image/svg+xml,${encodeURIComponent(`
+      <svg width="600" height="400" xmlns="http://www.w3.org/2000/svg">
+        <rect width="600" height="400" fill="${backgroundColorLive}" />
+        ${
+          isLive
+            ? '<rect x="10" y="10" width="80" height="30" rx="15" fill="#ff0000"/><text x="25" y="30" font-family="Arial" font-size="16" fill="white" font-weight="bold">LIVE</text>'
+            : ""
+        }
+        <text x="300" y="180" font-family="Arial" font-size="28" fill="white" text-anchor="middle" font-weight="bold">${title}</text>
+        <text x="300" y="230" font-family="Arial" font-size="18" fill="white" text-anchor="middle">${walletAddress.substring(
+          0,
+          8
+        )}...${walletAddress.substring(walletAddress.length - 6)}</text>
+        <text x="300" y="370" font-family="Arial" font-size="14" fill="rgba(255,255,255,0.7)" text-anchor="middle">strmly</text>
+      </svg>
+    `)}`;
+  };
+
+  // Fetch videos and lives from Supabase
+  useEffect(() => {
+    const fetchContent = async () => {
+      try {
+        setContentLoading(true);
+        const supabase = createClient();
+        console.log(
+          "Fetching content for:",
+          profileData.userData.walletAddress
+        );
+
+        // Fetch videos
+        const { data: videosData, error: videosError } = await supabase
+          .from("videos")
+          .select("*")
+          .eq("wallet_address", profileData.userData.walletAddress);
+
+        if (videosError) {
+          console.error("Error fetching videos:", videosError);
+        } else {
+          console.log("Videos fetched:", videosData?.length || 0, videosData);
+        }
+
+        // Fetch lives
+        const { data: livesData, error: livesError } = await supabase
+          .from("lives")
+          .select("*")
+          .eq("walletAddress", profileData.userData.walletAddress);
+
+        if (livesError) {
+          console.error("Error fetching lives:", livesError);
+        } else {
+          console.log("Lives fetched:", livesData?.length || 0, livesData);
+        }
+
+        // Transform videos data to Content format
+        const videosContent = videosData
+          ? videosData.map((video: any) => {
+              console.log("Processing video:", video);
+
+              // Generate custom thumbnail if none exists
+              const thumbnail =
+                video.thumbnail ||
+                generateCustomThumbnail(
+                  video.title || "Untitled Video",
+                  video.wallet_address || profileData.userData.walletAddress,
+                  false
+                );
+
+              return {
+                id: video.id,
+                title: video.title || "Untitled Video",
+                thumbnail,
+                views: video.views || 0,
+                timestamp: video.created_at || new Date().toISOString(),
+                isLive: false,
+                walletAddress:
+                  video.wallet_address || profileData.userData.walletAddress,
+              };
+            })
+          : [];
+
+        // Transform lives data to Content format
+        const livesContent = livesData
+          ? livesData.map((live: any) => {
+              console.log("Processing live:", live);
+
+              // Generate custom thumbnail if none exists
+              const thumbnail =
+                live.thumbnail ||
+                generateCustomThumbnail(
+                  live.title || "Live Stream",
+                  live.walletAddress || profileData.userData.walletAddress,
+                  true
+                );
+
+              return {
+                id: live.id,
+                title: live.title || "Live Stream",
+                thumbnail,
+                views: live.viewers || 0,
+                timestamp: live.started_at || new Date().toISOString(),
+                isLive: true,
+                playback_id: live.playback_id,
+                walletAddress:
+                  live.walletAddress || profileData.userData.walletAddress,
+              };
+            })
+          : [];
+
+        // Combine videos and lives
+        const allContent = [...videosContent, ...livesContent];
+        console.log("Total content items:", allContent.length, allContent);
+
+        // Add some dummy content if empty and in development
+        if (allContent.length === 0 && process.env.NODE_ENV === "development") {
+          console.log("Adding dummy content for development");
+          allContent.push({
+            id: "dev-video-1",
+            title: "Development Video Example",
+            thumbnail: generateCustomThumbnail(
+              "Development Video",
+              profileData.userData.walletAddress,
+              false
+            ),
+            views: 123,
+            timestamp: new Date().toISOString(),
+            isLive: false,
+            walletAddress: profileData.userData.walletAddress,
+          });
+
+          allContent.push({
+            id: "dev-live-1",
+            title: "Development Live Stream Example",
+            thumbnail: generateCustomThumbnail(
+              "Development Stream",
+              profileData.userData.walletAddress,
+              true
+            ),
+            views: 45,
+            timestamp: new Date().toISOString(),
+            isLive: true,
+            walletAddress: profileData.userData.walletAddress,
+          });
+        }
+
+        setContent(allContent);
+      } catch (err) {
+        console.error("Error fetching content:", err);
+      } finally {
+        setContentLoading(false);
+      }
+    };
+
+    fetchContent();
+  }, [profileData.userData.walletAddress]);
+
+  // Handle claiming payout balance
+  const handleClaimBalance = async () => {
+    if (!address || payoutBalance <= 0) return;
+
+    try {
+      setClaimLoading(true);
+
+      // Assuming you have a contract function to claim the balance
+      // This would need to be implemented based on your contract specs
+      // This is just a placeholder implementation
+      toast.info("Claiming balance...");
+
+      // Example contract call (replace with actual implementation)
+      // const tx = await writeContract({
+      //   address: contractAddress,
+      //   abi: ABI,
+      //   functionName: "claimBalance",
+      // });
+
+      // await tx.wait();
+
+      // After successful claim, update the balance
+      // setPayoutBalance(0);
+
+      toast.success("Balance claimed successfully!");
+    } catch (err) {
+      console.error("Error claiming balance:", err);
+      toast.error("Failed to claim balance");
+    } finally {
+      setClaimLoading(false);
+    }
   };
 
   return (
@@ -1048,10 +1227,58 @@ export default function ProfilePage({
               </p>
             </CardContent>
           </Card>
-          <div className="p-4">
-        <h1 className="text-5xl text-white py-2">{payoutBalance}</h1>
-        <button className="text-white bg-pink-500 rounded-lg p-4 ">Claim Balance</button>
-      </div>
+
+          {/* Payout Balance Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Payout</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-baseline">
+                  <span className="text-3xl font-bold">{payoutBalance}</span>
+                  <span className="text-sm ml-2 text-muted-foreground">
+                    ETH
+                  </span>
+                </div>
+
+                <Button
+                  className="w-full"
+                  onClick={handleClaimBalance}
+                  disabled={claimLoading || payoutBalance <= 0}
+                  variant="default"
+                >
+                  {claimLoading ? (
+                    <span className="flex items-center">
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-current"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Processing...
+                    </span>
+                  ) : (
+                    "Claim Balance"
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -1135,110 +1362,148 @@ export default function ProfilePage({
         </div>
       )}
 
-      {/* Content Section (Videos & Streams) with Tabs */}
+      {/* Content Section (Videos & Streams) */}
       <div className="mt-10">
         <h2 className="text-2xl font-bold mb-6">Content</h2>
 
-        <Tabs defaultValue="videos" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="videos">Videos</TabsTrigger>
-            <TabsTrigger value="streams">Live Streams</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="videos">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {content.filter((item) => !item.isLive).length > 0 ? (
-                content
-                  .filter((item) => !item.isLive)
-                  .map((item) => (
-                    <Card
-                      key={item.id}
-                      className="overflow-hidden hover:shadow-lg transition-shadow"
-                    >
-                      <div className="relative">
-                        <img
-                          src={item.thumbnail}
-                          alt={item.title}
-                          className="w-full h-40 object-cover"
-                        />
-                        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                          {item.views.toLocaleString()} views
-                        </div>
+        {/* Videos Section */}
+        <div className="mb-10">
+          <h3 className="text-xl font-semibold mb-4">Videos</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {contentLoading ? (
+              <div className="col-span-full flex justify-center py-12">
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin h-6 w-6 border-b-2 border-primary rounded-full"></div>
+                  <span>Loading videos...</span>
+                </div>
+              </div>
+            ) : content.filter((item) => !item.isLive).length > 0 ? (
+              content
+                .filter((item) => !item.isLive)
+                .map((item) => (
+                  <Card
+                    key={item.id}
+                    className="overflow-hidden hover:shadow-lg transition-shadow"
+                  >
+                    <div className="relative">
+                      <img
+                        src={item.thumbnail}
+                        alt={item.title}
+                        className="w-full h-40 object-cover"
+                      />
+                      <div
+                        className="absolute top-2 left-2 text-white text-xs font-bold px-2 py-1 rounded"
+                        style={{
+                          backgroundColor: "#0070f3",
+                        }}
+                      >
+                        VIDEO
                       </div>
-                      <CardContent className="p-4">
-                        <h3 className="font-medium line-clamp-2 h-12">
-                          {item.title}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mt-2">
+                      <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                        {item.views.toLocaleString()} views
+                      </div>
+                    </div>
+                    <CardContent className="p-4">
+                      <h3 className="font-medium line-clamp-2 h-12">
+                        {item.title}
+                      </h3>
+                      <div className="flex justify-between items-center mt-2">
+                        <p className="text-xs text-muted-foreground">
                           {getRelativeTimeString(new Date(item.timestamp))}
                         </p>
-                      </CardContent>
-                    </Card>
-                  ))
-              ) : (
-                <div className="col-span-full text-center py-12">
-                  <p className="text-lg text-muted-foreground">
-                    No videos uploaded yet
-                  </p>
-                  {isProfileOwner && (
-                    <Button className="mt-4" variant="outline">
-                      Upload Your First Video
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="streams">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {content.filter((item) => item.isLive).length > 0 ? (
-                content
-                  .filter((item) => item.isLive)
-                  .map((item) => (
-                    <Card
-                      key={item.id}
-                      className="overflow-hidden hover:shadow-lg transition-shadow"
-                    >
-                      <div className="relative">
-                        <img
-                          src={item.thumbnail}
-                          alt={item.title}
-                          className="w-full h-40 object-cover"
-                        />
-                        <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                          LIVE
-                        </div>
-                        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                          {item.views.toLocaleString()} viewers
-                        </div>
+                        <Link href={`/videos/${item.id}`}>
+                          <Button size="sm" variant="secondary">
+                            Watch Video
+                          </Button>
+                        </Link>
                       </div>
-                      <CardContent className="p-4">
-                        <h3 className="font-medium line-clamp-2 h-12">
-                          {item.title}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mt-2">
+                    </CardContent>
+                  </Card>
+                ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <p className="text-lg text-muted-foreground">
+                  No videos uploaded yet
+                </p>
+                {isProfileOwner && (
+                  <Button className="mt-4" variant="outline">
+                    Upload Video
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Live Streams Section */}
+        <div>
+          <h3 className="text-xl font-semibold mb-4">Live Streams</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {contentLoading ? (
+              <div className="col-span-full flex justify-center py-12">
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin h-6 w-6 border-b-2 border-primary rounded-full"></div>
+                  <span>Loading streams...</span>
+                </div>
+              </div>
+            ) : content.filter((item) => item.isLive).length > 0 ? (
+              content
+                .filter((item) => item.isLive)
+                .map((item) => (
+                  <Card
+                    key={item.id}
+                    className="overflow-hidden hover:shadow-lg transition-shadow"
+                  >
+                    <div className="relative">
+                      <img
+                        src={item.thumbnail}
+                        alt={item.title}
+                        className="w-full h-40 object-cover"
+                      />
+                      <div
+                        className="absolute top-2 left-2 text-white text-xs font-bold px-2 py-1 rounded"
+                        style={{
+                          backgroundColor: "#ff0000",
+                        }}
+                      >
+                        LIVE
+                      </div>
+                      <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                        {item.views.toLocaleString()} viewers
+                      </div>
+                    </div>
+                    <CardContent className="p-4">
+                      <h3 className="font-medium line-clamp-2 h-12">
+                        {item.title}
+                      </h3>
+                      <div className="flex justify-between items-center mt-2">
+                        <p className="text-xs text-muted-foreground">
                           Started{" "}
                           {getRelativeTimeString(new Date(item.timestamp))}
                         </p>
-                      </CardContent>
-                    </Card>
-                  ))
-              ) : (
-                <div className="col-span-full text-center py-12">
-                  <p className="text-lg text-muted-foreground">
-                    No active streams
-                  </p>
-                  {isProfileOwner && (
-                    <Button className="mt-4" variant="outline">
-                      Start Streaming
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+                        <Link href={`/live/${item.playback_id}`}>
+                          <Button size="sm" variant="default">
+                            Watch Live
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <p className="text-lg text-muted-foreground">
+                  No active streams
+                </p>
+                {isProfileOwner && (
+                  <Button className="mt-4" variant="outline">
+                    Start Streaming
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
