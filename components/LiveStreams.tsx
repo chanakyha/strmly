@@ -107,7 +107,7 @@ export default function LiveStreams() {
         </h1>
         <h1 className="text-lg font-medium mb-3">Streams</h1>
       </div>
-      <div className="flex gap-4 overflow-x-auto">
+      <div className="flex gap-4 overflow-x-scroll scrollbar-hidden pb-4">
         {loading ? (
           <p className="text-sm text-gray-400">Loading live streams...</p>
         ) : streams.length === 0 ? (
